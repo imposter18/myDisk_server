@@ -6,6 +6,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import express from "express";
 import router from "./router/index.js";
+import errorMiddleware from "./middlewares/error-middleware.js";
 
 const PORT = process.env.DB_PORT || 5000;
 const URL = process.env.DB_URL;
@@ -17,6 +18,8 @@ app.use(cookieParser());
 app.use(cors());
 app.use("/api", router);
 
+app.use(errorMiddleware);
+
 const start = async () => {
 	try {
 		mongoose.set("strictQuery", false);
@@ -25,7 +28,7 @@ const start = async () => {
 			useUnifiedTopology: true,
 		});
 		app.listen(PORT, () => {
-			console.log("server started on PORT =", PORT);
+			console.log("server started on PORT=", PORT);
 		});
 	} catch (e) {
 		console.log(e);
