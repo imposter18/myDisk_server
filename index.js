@@ -1,25 +1,35 @@
-// const express = require("express");
-// const mongoose = require("mongoose");
-// const config = require("config");
-import authRouter from "./routes/authRouter.js";
-import config from "config";
+import dotenv from "dotenv";
+dotenv.config({ silent: true });
+import cookieParser from "cookie-parser";
+// import authRouter from "./router/authRouter.js";
+import cors from "cors";
 import mongoose from "mongoose";
 import express from "express";
+import router from "./router/index.js";
+
+const PORT = process.env.DB_PORT || 5000;
+const URL = process.env.DB_URL;
 
 const app = express();
-const PORT = config.get("serverPort");
 
 app.use(express.json());
-app.use("/api/auth", authRouter);
+app.use(cookieParser());
+app.use(cors());
+app.use("/api", router);
 
 const start = async () => {
 	try {
 		mongoose.set("strictQuery", false);
-		await mongoose.connect(config.get("dbUrl"));
-		app.listen(PORT, () => {
-			console.log("server started on port", PORT);
+		await mongoose.connect(URL, {
+			useNewUrlParser: true,
+			useUnifiedTopology: true,
 		});
-	} catch (e) {}
+		app.listen(PORT, () => {
+			console.log("server started on PORT =", PORT);
+		});
+	} catch (e) {
+		console.log(e);
+	}
 };
 
 start();

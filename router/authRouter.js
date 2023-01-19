@@ -1,6 +1,6 @@
 // const User =require('../models/User')
 import { Router } from "express";
-import User from "../models/User.js";
+import User from "../models/user-model.js";
 import bcrypt from "bcryptjs";
 
 const authRouter = new Router();
