@@ -7,9 +7,9 @@ const UserSchema = new Schema({
 	isActivated: { type: Boolean, default: false },
 	activationLink: { type: String },
 	diskSpace: { type: Number, default: 1024 ** 3 * 10 },
-	userSpace: { type: Number, default: 0 },
+	usedSpace: { type: Number, default: 0 },
 	avatar: { type: String },
-	files: [{ type: mongoose.Types.ObjectId, ref: "File" }],
+	files: [{ type: Schema.Types.ObjectId, ref: "File" }],
 });
 
 export default model("User", UserSchema);

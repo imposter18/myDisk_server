@@ -5,6 +5,8 @@ import MailService from "./mail-service.js";
 import tokenService from "./token-service.js";
 import UserDto from "../dtos/user-dto.js";
 import ApiError from "../exeptions/api-error.js";
+import fileService from "./file-service.js";
+import fileModel from "../models/file-model.js";
 class UserService {
 	async registration(email, password, userName) {
 		const candidate = await userModel.findOne({ email });
@@ -29,6 +31,7 @@ class UserService {
 		const tokens = tokenService.generateTokens({ ...userDto });
 		await tokenService.saveToken(userDto.id, tokens.refreshToken);
 		await user.save();
+		await fileService.createDir(new fileModel({ user: user.id, name: "" }));
 		// return res.json({ message: `User was created` });
 		return {
 			...tokens,

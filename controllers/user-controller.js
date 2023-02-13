@@ -14,6 +14,8 @@ class UserController {
 				);
 			}
 			const { email, password, userName } = req.body;
+			// console.log(req.body, "body");
+
 			const userData = await userService.registration(
 				email,
 				password,
@@ -60,9 +62,9 @@ class UserController {
 				httpOnly: true,
 			});
 			return res.json(userData);
-
+		} catch (e) {
 			next(e);
-		} catch (e) {}
+		}
 	}
 	async activate(req, res, next) {
 		try {
