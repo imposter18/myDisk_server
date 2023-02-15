@@ -20,5 +20,6 @@ router.get("/activate/:link", userController.activate);
 router.post("/files", authMiddleware, fileController.createDir);
 router.get("/files", authMiddleware, fileController.getFiles);
 router.post("/upload", authMiddleware, fileController.uploadFile);
+router.get("/download", authMiddleware, fileController.downloadFile);
 
 export default router;

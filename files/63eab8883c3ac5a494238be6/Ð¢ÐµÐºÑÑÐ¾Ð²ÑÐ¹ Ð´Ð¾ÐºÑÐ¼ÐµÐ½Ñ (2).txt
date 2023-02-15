@@ -1,0 +1,3 @@
+ "email": "user66@mail.ru",
+    "password": "124123",
+    "role": "ADMIN"

@@ -2,9 +2,11 @@ import fileService from "../service/file-service.js";
 import userModel from "../models/user-model.js";
 import fileModel from "../models/file-model.js";
 import * as fs from "fs";
+import path from "path";
+import ApiError from "../exeptions/api-error.js";
 
 class FileController {
-	async createDir(req, res) {
+	async createDir(req, res, next) {
 		try {
 			const { name, type, parent } = req.body;
 			const file = new fileModel({ name, type, parent, user: req.user.id });
@@ -22,6 +24,7 @@ class FileController {
 			return res.json(file);
 		} catch (e) {
 			console.log(e);
+			// next(e);
 			return res.status(400).json(e.message);
 		}
 	}
@@ -47,36 +50,40 @@ class FileController {
 			});
 			const user = await userModel.findOne({ _id: req.user.id });
 
-			if (user.usedSpace + file.size > user.diskSpace) {
-				return res.status(400).json({ message: "There no space on disk" });
-			}
-
-			user.usedSpace = user.usedSpace + file.size;
-			let path;
-			if (parent) {
-				path = `${process.env.FILE_PATH}\\${user._id}\\${parent.path}\\${file.name}`;
-			} else {
-				path = `${process.env.FILE_PATH}\\${user._id}\\${file.name}`;
-			}
-			if (fs.existsSync(path)) {
-				return res.status(400).json({ message: "File already exist" });
-			}
-			file.mv(path);
-			const type = file.name.split(".").pop();
-			const dbFile = new fileModel({
-				name: file.name,
-				type,
-				size: file.size,
-				path: parent?.path,
-				parent: parent?._id,
-				user: user._id,
-			});
+			const dbFile = await fileService.uploadFile(file, parent, user);
 			await dbFile.save();
-			await user.save();
+
 			res.json(dbFile);
 		} catch (e) {
 			console.log(e);
 			return res.status(500).json({ message: "Upload error" });
+		}
+	}
+	async downloadFile(req, res, next) {
+		try {
+			const file = await fileModel.findOne({
+				_id: req.query.id,
+				user: req.user.id,
+			});
+			// console.log(file);
+			const puth = `${process.env.FILE_PATH}\\${req.user.id}\\${file.path}\\${file.name}`;
+
+			function fileExists(path) {
+				try {
+					fs.accessSync(path);
+					return true;
+				} catch (e) {
+					return false;
+				}
+			}
+			if (fileExists(puth)) {
+				return res.download(puth, file.name);
+			}
+			return next(ApiError.BadRequest("Download error", errors.array()));
+		} catch (e) {
+			console.log(e);
+			// next(ApiError.BadRequest("Download error1", e));
+			res.status(500).json({ message: "Download error" });
 		}
 	}
 }
