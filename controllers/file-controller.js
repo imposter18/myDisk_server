@@ -66,24 +66,43 @@ class FileController {
 				user: req.user.id,
 			});
 			// console.log(file);
-			const puth = `${process.env.FILE_PATH}\\${req.user.id}\\${file.path}\\${file.name}`;
+			const puth = `${process.env.FILE_PATH}\\${req.user.id}\\${file.path}`;
 
 			function fileExists(path) {
 				try {
 					fs.accessSync(path);
+
 					return true;
 				} catch (e) {
 					return false;
 				}
 			}
+
 			if (fileExists(puth)) {
-				return res.download(puth, file.name);
+				return res.download(puth, file.name, { dotfiles: "allow" });
 			}
 			return next(ApiError.BadRequest("Download error", errors.array()));
 		} catch (e) {
 			console.log(e);
 			// next(ApiError.BadRequest("Download error1", e));
 			res.status(500).json({ message: "Download error" });
+		}
+	}
+	async deleteFile(req, res) {
+		try {
+			const file = await fileModel.findOne({
+				_id: req.query.id,
+				user: req.user.id,
+			});
+			if (!file) {
+				return res.status(400).json({ message: "File not found" });
+			}
+			fileService.deleteFile(file);
+			await file.remove();
+			return res.json(file);
+		} catch (e) {
+			console.log(e);
+			return res.status(400).json({ message: "Dir is not empty" });
 		}
 	}
 }

@@ -40,18 +40,33 @@ class FileService {
 			await user.save();
 			file.mv(path);
 			const type = file.name.split(".").pop();
+			let filePath = file.name;
+			if (parent) {
+				filePath = parent.path + "\\" + file.name;
+			}
 
 			return new fileModel({
 				name: file.name,
 				type,
 				size: file.size,
-				path: parent?.path,
+				path: filePath,
 				parent: parent?._id,
 				user: user._id,
 			});
 		} catch (e) {
 			throw ApiError.BadRequest("Download error", errors.array());
 		}
+	}
+	deleteFile(file) {
+		const path = this.getPath(file);
+		if (file.type === "dir") {
+			fs.rmdirSync(path);
+		} else {
+			fs.unlinkSync(path);
+		}
+	}
+	getPath(file) {
+		return `${process.env.FILE_PATH}\\${file.user}\\${file.path}`;
 	}
 }
 
