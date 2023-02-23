@@ -4,6 +4,7 @@ import fileModel from "../models/file-model.js";
 import * as fs from "fs";
 import path from "path";
 import ApiError from "../exeptions/api-error.js";
+import { Buffer } from "node:buffer";
 
 class FileController {
 	async createDir(req, res, next) {
@@ -40,9 +41,52 @@ class FileController {
 			return res.status(500).json({ message: "Can not get file" });
 		}
 	}
+	async getAllParent(req, res) {
+		try {
+			console.log(req.query, "req.query");
+			const file = await fileModel.findOne({
+				user: req.user.id,
+				_id: req.query.id,
+			});
+
+			let promise = () =>
+				new Promise((resolve, reject) => {
+					const stack = [];
+					async function recursiveFind(file) {
+						if (file.parent) {
+							const fileWithParent = await fileModel.findOne({
+								user: req.user.id,
+								_id: file.parent,
+							});
+							stack.push(fileWithParent);
+							return recursiveFind(fileWithParent);
+						} else {
+							resolve(stack);
+						}
+					}
+					recursiveFind(file);
+				});
+			const startPromise = async () => {
+				const result = await promise();
+				if (result) {
+					console.log(result, "done");
+					return res.json(result);
+				}
+			};
+
+			startPromise();
+			// promise.then((res) => console.log(res, "ress"));
+		} catch (e) {
+			console.log(e);
+			return res.status(500).json({ message: "Can not get file" });
+		}
+	}
 	async uploadFile(req, res) {
 		try {
+			// console.log(req);
 			const file = req.files.file;
+			// const someEncodedString = Buffer.from(file.name, "utf-8").toString();
+			// console.log(someEncodedString, "someEncodedString");
 
 			const parent = await fileModel.findOne({
 				user: req.user.id,
@@ -65,7 +109,7 @@ class FileController {
 				_id: req.query.id,
 				user: req.user.id,
 			});
-			// console.log(file);
+
 			const puth = `${process.env.FILE_PATH}\\${req.user.id}\\${file.path}`;
 
 			function fileExists(path) {
@@ -79,6 +123,7 @@ class FileController {
 			}
 
 			if (fileExists(puth)) {
+				// console.log(file);
 				return res.download(puth, file.name, { dotfiles: "allow" });
 			}
 			return next(ApiError.BadRequest("Download error", errors.array()));

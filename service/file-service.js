@@ -36,6 +36,7 @@ class FileService {
 			if (fs.existsSync(path)) {
 				return res.status(400).json({ message: "File already exist" });
 			}
+
 			user.usedSpace = user.usedSpace + file.size;
 			await user.save();
 			file.mv(path);
