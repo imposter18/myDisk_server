@@ -35,7 +35,11 @@ class FileController {
 				user: req.user.id,
 				parent: req.query.parent,
 			});
-			return res.json(files);
+			const currentDir = await fileModel.findOne({
+				user: req.user.id,
+				_id: req.query.parent,
+			});
+			return res.json({ files, currentDir });
 		} catch (e) {
 			console.log(e);
 			return res.status(500).json({ message: "Can not get file" });
@@ -43,13 +47,11 @@ class FileController {
 	}
 	async getAllParent(req, res) {
 		try {
-			console.log(req.query, "req.query");
 			const file = await fileModel.findOne({
 				user: req.user.id,
 				_id: req.query.id,
 			});
-
-			let promise = () =>
+			const promise = () =>
 				new Promise((resolve, reject) => {
 					const stack = [];
 					async function recursiveFind(file) {
@@ -69,38 +71,52 @@ class FileController {
 			const startPromise = async () => {
 				const result = await promise();
 				if (result) {
-					console.log(result, "done");
 					return res.json(result);
 				}
 			};
 
 			startPromise();
-			// promise.then((res) => console.log(res, "ress"));
 		} catch (e) {
 			console.log(e);
-			return res.status(500).json({ message: "Can not get file" });
+			return res.status(500).json({ message: "Can not get parent" });
 		}
 	}
 	async uploadFile(req, res) {
 		try {
-			// console.log(req);
 			const file = req.files.file;
-			// const someEncodedString = Buffer.from(file.name, "utf-8").toString();
-			// console.log(someEncodedString, "someEncodedString");
+			//
+			// const filePath = `${process.env.FILE_PATH}\\${file.user}\\${file.path}`;
+			// return new Promise((ressolve, reject) => {
+			// 	try {
+			// 		if (!fs.existsSync(filePath)) {
+			// 			fs.mkdirSync(filePath, { recursive: true });
+			// 			return ressolve({ message: "File was created!" });
+			// 		} else {
+			// 			return reject({
+			// 				message: `File named "${file.name}" already exists!`,
+			// 			});
+			// 		}
+			// 	} catch (e) {
+			// 		return reject({ message: "File error" });
+			// 	}
+			// });
 
+			//
 			const parent = await fileModel.findOne({
 				user: req.user.id,
 				_id: req.body.parent,
 			});
 			const user = await userModel.findOne({ _id: req.user.id });
 
-			const dbFile = await fileService.uploadFile(file, parent, user);
-			await dbFile.save();
+			const dbFile = await fileService.uploadFile(file, parent, user, res);
+			// console.log(dbFile, "dbFile");
+			if (dbFile) {
+				await dbFile.save();
+			}
 
 			res.json(dbFile);
 		} catch (e) {
-			console.log(e);
-			return res.status(500).json({ message: "Upload error" });
+			return res.status(500).json({ message: e });
 		}
 	}
 	async downloadFile(req, res, next) {
@@ -139,10 +155,14 @@ class FileController {
 				_id: req.query.id,
 				user: req.user.id,
 			});
+
 			if (!file) {
 				return res.status(400).json({ message: "File not found" });
 			}
+			const a = await fileService.recursiveDeleteFiles(file, req.user.id);
+			console.log(a, "aaaaa");
 			fileService.deleteFile(file);
+
 			await file.remove();
 			return res.json(file);
 		} catch (e) {
