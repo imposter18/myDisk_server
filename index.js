@@ -28,7 +28,7 @@ app.use(
 		origin: process.env.CLIENT_URL,
 		credentials: true,
 		optionSuccessStatus: 200,
-		allowedHeaders: ["Content-Type", "Authorization"],
+		allowedHeaders: ["Content-Type", "*Content-Type", "Authorization"],
 	})
 );
 

@@ -84,6 +84,8 @@ class FileController {
 	async uploadFile(req, res) {
 		try {
 			const file = req.files.file;
+			const fileName = req.body.fileName;
+			const uploadId = req.body.uploadId;
 			//
 			// const filePath = `${process.env.FILE_PATH}\\${file.user}\\${file.path}`;
 			// return new Promise((ressolve, reject) => {
@@ -108,12 +110,19 @@ class FileController {
 			});
 			const user = await userModel.findOne({ _id: req.user.id });
 
-			const dbFile = await fileService.uploadFile(file, parent, user, res);
+			const dbFile = await fileService.uploadFile(
+				file,
+				parent,
+				user,
+				res,
+				fileName,
+				uploadId
+			);
 			// console.log(dbFile, "dbFile");
 			if (dbFile) {
 				await dbFile.save();
 			}
-
+			console.log(dbFile);
 			res.json(dbFile);
 		} catch (e) {
 			return res.status(500).json({ message: e });
@@ -159,11 +168,13 @@ class FileController {
 			if (!file) {
 				return res.status(400).json({ message: "File not found" });
 			}
-			const a = await fileService.recursiveDeleteFiles(file, req.user.id);
-			console.log(a, "aaaaa");
+			const children = await fileService.getAllChildren(file, req.user.id);
+			// console.log(children, "children");
+			children.forEach(async (element) => {
+				await element.remove();
+			});
 			fileService.deleteFile(file);
 
-			await file.remove();
 			return res.json(file);
 		} catch (e) {
 			console.log(e);

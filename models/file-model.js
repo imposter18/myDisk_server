@@ -10,5 +10,6 @@ const File = new Schema({
 	user: { type: Schema.Types.ObjectId, ref: "User" },
 	parent: { type: Schema.Types.ObjectId, ref: "File" },
 	childs: [{ type: Schema.Types.ObjectId, ref: "File" }],
+	uploadId: { type: String },
 });
 export default model("File", File);
