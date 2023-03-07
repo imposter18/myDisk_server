@@ -36,6 +36,7 @@ app.use(
 app.use(fileUpload({}));
 app.use(express.json());
 app.use(cookieParser());
+app.use("/api/files", express.static("files"));
 // app.use(cors());
 app.use("/api", router);
 

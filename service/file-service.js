@@ -22,7 +22,7 @@ class FileService {
 			}
 		});
 	}
-	async uploadFile(file, parent, user, res, fileName, uploadId) {
+	async uploadFile(file, parent, user, type, fileName, uploadId) {
 		return new Promise((ressolve, reject) => {
 			try {
 				if (user.usedSpace + file.size > user.diskSpace) {
@@ -62,7 +62,7 @@ class FileService {
 				user.usedSpace = user.usedSpace + file.size;
 				user.save();
 				file.mv(path);
-				const type = file.name.split(".").pop();
+
 				let filePath = fileName;
 				if (parent) {
 					filePath = parent.path + "\\" + fileName;

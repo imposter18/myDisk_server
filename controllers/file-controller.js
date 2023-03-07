@@ -5,6 +5,7 @@ import * as fs from "fs";
 import path from "path";
 import ApiError from "../exeptions/api-error.js";
 import { Buffer } from "node:buffer";
+import { v4 as uuidv4 } from "uuid";
 
 class FileController {
 	async createDir(req, res, next) {
@@ -55,7 +56,7 @@ class FileController {
 				new Promise((resolve, reject) => {
 					const stack = [];
 					async function recursiveFind(file) {
-						if (file.parent) {
+						if (file?.parent) {
 							const fileWithParent = await fileModel.findOne({
 								user: req.user.id,
 								_id: file.parent,
@@ -86,24 +87,7 @@ class FileController {
 			const file = req.files.file;
 			const fileName = req.body.fileName;
 			const uploadId = req.body.uploadId;
-			//
-			// const filePath = `${process.env.FILE_PATH}\\${file.user}\\${file.path}`;
-			// return new Promise((ressolve, reject) => {
-			// 	try {
-			// 		if (!fs.existsSync(filePath)) {
-			// 			fs.mkdirSync(filePath, { recursive: true });
-			// 			return ressolve({ message: "File was created!" });
-			// 		} else {
-			// 			return reject({
-			// 				message: `File named "${file.name}" already exists!`,
-			// 			});
-			// 		}
-			// 	} catch (e) {
-			// 		return reject({ message: "File error" });
-			// 	}
-			// });
-
-			//
+			const type = file.name.split(".").pop();
 			const parent = await fileModel.findOne({
 				user: req.user.id,
 				_id: req.body.parent,
@@ -114,11 +98,14 @@ class FileController {
 				file,
 				parent,
 				user,
-				res,
+				type,
 				fileName,
 				uploadId
 			);
-			// console.log(dbFile, "dbFile");
+			// if (type == "jpg") {
+			// 	fileStaticName = uuidv4() + fileName + ".jpg";
+			// 	file.mv()
+			// }
 			if (dbFile) {
 				await dbFile.save();
 			}

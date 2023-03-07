@@ -3,6 +3,8 @@ dotenv.config();
 import userService from "../service/user-service.js";
 import { validationResult } from "express-validator";
 import ApiError from "../exeptions/api-error.js";
+import userModel from "../models/user-model.js";
+import fileModel from "../models/file-model.js";
 
 class UserController {
 	async registration(req, res, next) {
@@ -75,10 +77,16 @@ class UserController {
 			next(e);
 		}
 	}
-	async getUsers(req, res, next) {
+	async getUserSpace(req, res, next) {
 		try {
-			const users = await userService.getAllUsers();
-			res.json(users);
+			const user = await userModel.findById(req.user.id);
+			const allUserFiles = await fileModel.find({ user: req.user.id });
+			const size = allUserFiles.reduce((sum, current) => {
+				return sum + current.size;
+			}, 0);
+			user.usedSpace = size;
+			user.save();
+			res.json(user);
 		} catch (e) {
 			next(e);
 		}
