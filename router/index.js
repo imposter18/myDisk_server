@@ -17,6 +17,8 @@ router.post("/logout", userController.logout);
 router.get("/refresh", userController.refresh);
 router.get("/userSpace", authMiddleware, userController.getUserSpace);
 router.get("/activate/:link", userController.activate);
+router.get("/updateUserSpace", authMiddleware, userController.getUserSpace);
+//
 router.post("/files", authMiddleware, fileController.createDir);
 router.get("/files", authMiddleware, fileController.getFiles);
 router.post("/upload", authMiddleware, fileController.uploadFile);

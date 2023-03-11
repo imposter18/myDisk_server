@@ -5,6 +5,7 @@ import { validationResult } from "express-validator";
 import ApiError from "../exeptions/api-error.js";
 import userModel from "../models/user-model.js";
 import fileModel from "../models/file-model.js";
+import UserDto from "../dtos/user-dto.js";
 
 class UserController {
 	async registration(req, res, next) {
@@ -86,7 +87,8 @@ class UserController {
 			}, 0);
 			user.usedSpace = size;
 			user.save();
-			res.json(user);
+			const userDto = new UserDto(user);
+			res.json(userDto);
 		} catch (e) {
 			next(e);
 		}
