@@ -74,6 +74,7 @@ class FileService {
 						type,
 						size: file.size,
 						path: filePath,
+						date: new Date(),
 						parent: parent?._id,
 						user: user._id,
 						uploadId: uploadId,

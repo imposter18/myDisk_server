@@ -11,7 +11,13 @@ class FileController {
 	async createDir(req, res, next) {
 		try {
 			const { name, type, parent } = req.body;
-			const file = new fileModel({ name, type, parent, user: req.user.id });
+			const file = new fileModel({
+				name,
+				type,
+				parent,
+				user: req.user.id,
+				date: new Date(),
+			});
 			const parentFile = await fileModel.findOne({ _id: parent });
 			if (!parentFile) {
 				file.path = name;
@@ -32,10 +38,53 @@ class FileController {
 	}
 	async getFiles(req, res) {
 		try {
-			const files = await fileModel.find({
-				user: req.user.id,
-				parent: req.query.parent,
-			});
+			const { sort } = req.query;
+			const { derection } = req.query;
+			const derectionIndex = derection === "asc" ? 1 : -1;
+			let files;
+
+			switch (sort) {
+				case "name":
+					files = await fileModel
+						.find({
+							user: req.user.id,
+							parent: req.query.parent,
+						})
+						.sort({ name: derectionIndex });
+					break;
+				case "type":
+					files = await fileModel
+						.find({
+							user: req.user.id,
+							parent: req.query.parent,
+						})
+						.sort({ type: derectionIndex });
+					break;
+				case "date":
+					files = await fileModel
+						.find({
+							user: req.user.id,
+							parent: req.query.parent,
+						})
+						.sort({ date: derectionIndex });
+					break;
+				case "size":
+					files = await fileModel
+						.find({
+							user: req.user.id,
+							parent: req.query.parent,
+						})
+						.sort({ size: derectionIndex });
+					break;
+
+				default:
+					files = await fileModel.find({
+						user: req.user.id,
+						parent: req.query.parent,
+					});
+					break;
+			}
+
 			const currentDir = await fileModel.findOne({
 				user: req.user.id,
 				_id: req.query.parent,
