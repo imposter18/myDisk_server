@@ -32,15 +32,21 @@ app.use(
 	})
 );
 
-// app.use(corsMiddleware);
 app.use(fileUpload({}));
 app.use(express.json());
 app.use(cookieParser());
-app.use("/api/files", express.static("files"));
-// app.use(cors());
+app.use(
+	"/api/files",
+	express.static("files", {
+		setHeaders: setCustomCacheControl,
+	})
+);
 app.use("/api", router);
-
 app.use(errorMiddleware);
+
+function setCustomCacheControl(res) {
+	res.setHeader("Cache-Control", "public, max-age='1h'");
+}
 
 const start = async () => {
 	try {

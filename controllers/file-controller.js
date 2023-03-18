@@ -40,8 +40,17 @@ class FileController {
 		try {
 			const { sort } = req.query;
 			const { derection } = req.query;
-			const derectionIndex = derection === "asc" ? 1 : -1;
+			const { search } = req.query;
 			let files;
+			if (search) {
+				files = await fileModel.find({ user: req.user.id });
+				files = files.filter((file) =>
+					file.name.toLowerCase().includes(search.toLowerCase())
+				);
+				return res.json({ files, currentDir: null });
+			}
+
+			const derectionIndex = derection === "asc" ? 1 : -1;
 
 			switch (sort) {
 				case "name":
@@ -215,6 +224,17 @@ class FileController {
 		} catch (e) {
 			console.log(e);
 			return res.status(400).json({ message: "Dir is not empty" });
+		}
+	}
+	async searchFile(req, res) {
+		try {
+			const searchName = req.query.search;
+			let files = await fileModel.find({ user: req.user.id });
+			files = files.filter((file) => file.name.includes(searchName));
+			return res.json(files);
+		} catch (e) {
+			console.log(e);
+			return res.status(400).json({ message: "Search error" });
 		}
 	}
 }
