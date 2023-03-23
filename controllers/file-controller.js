@@ -160,10 +160,6 @@ class FileController {
 				fileName,
 				uploadId
 			);
-			// if (type == "jpg") {
-			// 	fileStaticName = uuidv4() + fileName + ".jpg";
-			// 	file.mv()
-			// }
 			if (dbFile) {
 				await dbFile.save();
 			}
@@ -214,16 +210,16 @@ class FileController {
 				return res.status(400).json({ message: "File not found" });
 			}
 			const children = await fileService.getAllChildren(file, req.user.id);
-			// console.log(children, "children");
 			children.forEach(async (element) => {
 				await element.remove();
 			});
+			file.remove();
 			fileService.deleteFile(file);
 
 			return res.json(file);
 		} catch (e) {
 			console.log(e);
-			return res.status(400).json({ message: "Dir is not empty" });
+			return res.status(500).json({ message: "delete error", error: e });
 		}
 	}
 	async searchFile(req, res) {
@@ -235,6 +231,46 @@ class FileController {
 		} catch (e) {
 			console.log(e);
 			return res.status(400).json({ message: "Search error" });
+		}
+	}
+	async renameFile(req, res) {
+		try {
+			const fileId = req.body.id;
+			const newName = req.body.newName;
+			const user = req.user;
+			const file = await fileModel.findOne({ user: user.id, _id: fileId });
+
+			const oldAbsolutPath = fileService.getPath(file);
+			const checkAccess = fileService.fileExists(oldAbsolutPath);
+			if (checkAccess) {
+				const relativePathToFile = fileService.getRelativePathToFile(file);
+				const newRelativePath = `${relativePathToFile}${newName}`;
+				let newAbsolutPath =
+					fileService.getPathToMainDirectory(file) + newRelativePath;
+				fs.renameSync(oldAbsolutPath, newAbsolutPath);
+				if (file.type === "dir") {
+					const children = await fileService.getAllChildren(file, user.id);
+					children.map((child) => {
+						return (child.path = child.path.replace(
+							file.path,
+							newRelativePath
+						));
+					});
+					children.forEach((child) => {
+						child.save();
+					});
+				}
+				file.name = newName;
+				file.path = newRelativePath;
+				file.save();
+			} else {
+				return res.status(500).json({ message: "Access error" });
+			}
+
+			res.json(file);
+		} catch (e) {
+			console.log(e);
+			return res.status(500).json({ message: "Rename error", error: e });
 		}
 	}
 }

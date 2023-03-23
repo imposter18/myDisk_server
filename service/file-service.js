@@ -1,5 +1,5 @@
 import * as fs from "fs";
-
+import path from "path";
 import ApiError from "../exeptions/api-error.js";
 
 import fileModel from "../models/file-model.js";
@@ -22,6 +22,16 @@ class FileService {
 			}
 		});
 	}
+	// !!
+	fileExists(path) {
+		try {
+			fs.accessSync(path);
+
+			return true;
+		} catch (e) {
+			return false;
+		}
+	}
 	async uploadFile(file, parent, user, type, fileName, uploadId) {
 		return new Promise((ressolve, reject) => {
 			try {
@@ -36,7 +46,6 @@ class FileService {
 				} else {
 					path = `${process.env.FILE_PATH}\\${user._id}\\${fileName}`;
 				}
-
 				function fileExists(path) {
 					try {
 						fs.accessSync(path);
@@ -47,9 +56,9 @@ class FileService {
 					}
 				}
 
-				const f = fileExists(path);
+				const check = fileExists(path);
 
-				if (f) {
+				if (check) {
 					return reject({
 						message: "File already exist",
 						data: { fileName, uploadId: uploadId },
@@ -95,40 +104,54 @@ class FileService {
 		}
 	}
 	async getAllChildren(file, userId) {
-		const treeChild = await fileModel.find({
-			user: userId,
-			parent: file._id,
-		});
-
-		const promise = (fileTree) =>
-			new Promise((resolve, reject) => {
-				let stack = [];
-				stack.push(fileTree);
-				async function recursivDelete(tree) {
-					stack.push(...tree);
-					for (let i = 0; i < tree.length; i++) {
-						const childTree = await fileModel.find({
-							user: userId,
-							parent: tree[i]._id,
-						});
-						return recursivDelete(childTree);
+		try {
+			const promise = (fileTree) =>
+				new Promise((resolve, reject) => {
+					let stack = [];
+					async function recursivFindChildren(tree) {
+						stack.push(...tree);
+						for (let i = 0; i < tree.length; i++) {
+							const childTree = await fileModel.find({
+								user: userId,
+								parent: tree[i]._id,
+							});
+							return recursivFindChildren(childTree);
+						}
 					}
+
+					recursivFindChildren(fileTree).then(() => resolve(stack));
+				});
+
+			const startPromise = async () => {
+				const treeChild = await fileModel.find({
+					user: userId,
+					parent: file._id,
+				});
+				const result = await promise(treeChild);
+				if (result) {
+					return result;
 				}
+			};
 
-				recursivDelete(treeChild).then(() => resolve(stack));
-			});
-
-		const startPromise = async () => {
-			const result = await promise(file);
-			if (result) {
-				return result;
-			}
-		};
-
-		return startPromise();
+			return startPromise();
+		} catch (e) {
+			return e;
+		}
 	}
 	getPath(file) {
 		return `${process.env.FILE_PATH}\\${file.user}\\${file.path}`;
+	}
+	getPathToMainDirectory(file) {
+		return `${process.env.FILE_PATH}\\${file.user}\\`;
+	}
+	getRelativePathToFile(file) {
+		if (file.path === file.name) {
+			return "";
+		}
+
+		if (file.path !== file.name) {
+			return `${path.dirname(file.path)}\\`;
+		}
 	}
 }
 

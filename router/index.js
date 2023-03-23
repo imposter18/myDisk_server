@@ -26,5 +26,6 @@ router.get("/download", authMiddleware, fileController.downloadFile);
 router.delete("/files", authMiddleware, fileController.deleteFile);
 router.get("/getPerent", authMiddleware, fileController.getAllParent);
 router.get("/searchFiles", authMiddleware, fileController.searchFile);
+router.post("/renameFile", authMiddleware, fileController.renameFile);
 
 export default router;
