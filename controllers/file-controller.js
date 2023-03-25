@@ -3,9 +3,6 @@ import userModel from "../models/user-model.js";
 import fileModel from "../models/file-model.js";
 import * as fs from "fs";
 import path from "path";
-import ApiError from "../exeptions/api-error.js";
-import { Buffer } from "node:buffer";
-import { v4 as uuidv4 } from "uuid";
 
 class FileController {
 	async createDir(req, res, next) {
@@ -32,8 +29,7 @@ class FileController {
 			return res.json(file);
 		} catch (e) {
 			console.log(e);
-			// next(e);
-			return res.status(400).json(e.message);
+			return res.status(400).json({ message: e.message, error: e });
 		}
 	}
 	async getFiles(req, res) {
@@ -101,43 +97,24 @@ class FileController {
 			return res.json({ files, currentDir });
 		} catch (e) {
 			console.log(e);
-			return res.status(500).json({ message: "Can not get file" });
+			return res.status(500).json({ message: "Can not get file", error: e });
 		}
 	}
 	async getAllParent(req, res) {
 		try {
+			const user = req.user;
 			const file = await fileModel.findOne({
-				user: req.user.id,
+				user: user.id,
 				_id: req.query.id,
 			});
-			const promise = () =>
-				new Promise((resolve, reject) => {
-					const stack = [];
-					async function recursiveFind(file) {
-						if (file?.parent) {
-							const fileWithParent = await fileModel.findOne({
-								user: req.user.id,
-								_id: file.parent,
-							});
-							stack.push(fileWithParent);
-							return recursiveFind(fileWithParent);
-						} else {
-							resolve(stack);
-						}
-					}
-					recursiveFind(file);
-				});
-			const startPromise = async () => {
-				const result = await promise();
-				if (result) {
-					return res.json(result);
-				}
-			};
 
-			startPromise();
+			let parents = await fileService.getAllParent(file, user);
+			parents = parents.reverse();
+
+			return res.json(parents);
 		} catch (e) {
 			console.log(e);
-			return res.status(500).json({ message: "Can not get parent" });
+			return res.status(500).json({ message: "Can not get parent", error: e });
 		}
 	}
 	async uploadFile(req, res) {
@@ -163,10 +140,11 @@ class FileController {
 			if (dbFile) {
 				await dbFile.save();
 			}
-			console.log(dbFile);
 			res.json(dbFile);
 		} catch (e) {
-			return res.status(500).json({ message: e });
+			return res
+				.status(500)
+				.json({ message: e.message, error: e, data: e.data });
 		}
 	}
 	async downloadFile(req, res, next) {
@@ -178,25 +156,13 @@ class FileController {
 
 			const puth = `${process.env.FILE_PATH}\\${req.user.id}\\${file.path}`;
 
-			function fileExists(path) {
-				try {
-					fs.accessSync(path);
-
-					return true;
-				} catch (e) {
-					return false;
-				}
-			}
-
-			if (fileExists(puth)) {
-				// console.log(file);
+			if (fileService.fileExists(puth)) {
 				return res.download(puth, file.name, { dotfiles: "allow" });
 			}
-			return next(ApiError.BadRequest("Download error", errors.array()));
+			return res.status(500).json({ message: "Download error" });
 		} catch (e) {
 			console.log(e);
-			// next(ApiError.BadRequest("Download error1", e));
-			res.status(500).json({ message: "Download error" });
+			res.status(500).json({ message: "Download error", error: e });
 		}
 	}
 	async deleteFile(req, res) {
@@ -230,7 +196,7 @@ class FileController {
 			return res.json(files);
 		} catch (e) {
 			console.log(e);
-			return res.status(400).json({ message: "Search error" });
+			return res.status(400).json({ message: "Search error", error: e });
 		}
 	}
 	async renameFile(req, res) {
@@ -238,6 +204,7 @@ class FileController {
 			const fileId = req.body.id;
 			const newName = req.body.newName;
 			const user = req.user;
+
 			const file = await fileModel.findOne({ user: user.id, _id: fileId });
 
 			const oldAbsolutPath = fileService.getPath(file);
@@ -256,10 +223,12 @@ class FileController {
 							newRelativePath
 						));
 					});
+					console.log(children);
 					children.forEach((child) => {
 						child.save();
 					});
 				}
+
 				file.name = newName;
 				file.path = newRelativePath;
 				file.save();
@@ -269,7 +238,7 @@ class FileController {
 
 			res.json(file);
 		} catch (e) {
-			console.log(e);
+			console.log(e, "e2");
 			return res.status(500).json({ message: "Rename error", error: e });
 		}
 	}

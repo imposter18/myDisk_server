@@ -6,7 +6,7 @@ import fileModel from "../models/file-model.js";
 
 class FileService {
 	createDir(file) {
-		const filePath = `${process.env.FILE_PATH}\\${file.user}\\${file.path}`;
+		const filePath = this.getPath(file);
 		return new Promise((ressolve, reject) => {
 			try {
 				if (!fs.existsSync(filePath)) {
@@ -22,7 +22,7 @@ class FileService {
 			}
 		});
 	}
-	// !!
+
 	fileExists(path) {
 		try {
 			fs.accessSync(path);
@@ -32,11 +32,32 @@ class FileService {
 			return false;
 		}
 	}
+	async getAllParent(file, user) {
+		try {
+			return new Promise((resolve, reject) => {
+				const stack = [];
+				async function recursiveFind(file) {
+					if (file?.parent) {
+						const fileWithParent = await fileModel.findOne({
+							user: user.id,
+							_id: file.parent,
+						});
+						stack.push(fileWithParent);
+						return recursiveFind(fileWithParent);
+					} else {
+						resolve(stack);
+					}
+				}
+				recursiveFind(file);
+			});
+		} catch (e) {
+			throw e;
+		}
+	}
 	async uploadFile(file, parent, user, type, fileName, uploadId) {
 		return new Promise((ressolve, reject) => {
 			try {
 				if (user.usedSpace + file.size > user.diskSpace) {
-					// return res.status(400).json({ message: "There no space on disk" });
 					return reject({ message: "There no space on disk" });
 				}
 
@@ -46,26 +67,14 @@ class FileService {
 				} else {
 					path = `${process.env.FILE_PATH}\\${user._id}\\${fileName}`;
 				}
-				function fileExists(path) {
-					try {
-						fs.accessSync(path);
 
-						return true;
-					} catch (e) {
-						return false;
-					}
-				}
-
-				const check = fileExists(path);
+				const check = this.fileExists(path);
 
 				if (check) {
 					return reject({
 						message: "File already exist",
 						data: { fileName, uploadId: uploadId },
 					});
-					// return res
-					// 	.status(400)
-					// 	.json({ message: "File already exist", data: file.name });
 				}
 
 				user.usedSpace = user.usedSpace + file.size;
@@ -91,51 +100,50 @@ class FileService {
 				);
 			} catch (e) {
 				console.log(e);
-				throw ApiError.BadRequest("Download error");
+				reject();
 			}
 		});
 	}
 	deleteFile(file) {
-		const path = this.getPath(file);
-		if (file.type === "dir") {
-			fs.rmdirSync(path, { recursive: true });
-		} else {
-			fs.unlinkSync(path);
+		try {
+			const path = this.getPath(file);
+			if (file.type === "dir") {
+				fs.rmdirSync(path, { recursive: true });
+			} else {
+				fs.unlinkSync(path);
+			}
+		} catch (e) {
+			throw e;
 		}
 	}
 	async getAllChildren(file, userId) {
 		try {
-			const promise = (fileTree) =>
-				new Promise((resolve, reject) => {
-					let stack = [];
-					async function recursivFindChildren(tree) {
-						stack.push(...tree);
-						for (let i = 0; i < tree.length; i++) {
-							const childTree = await fileModel.find({
-								user: userId,
-								parent: tree[i]._id,
-							});
-							return recursivFindChildren(childTree);
-						}
+			const children = await fileModel.find({
+				user: userId,
+				parent: file._id,
+			});
+
+			return new Promise((resolve, reject) => {
+				let stack = [];
+				async function recursivFindChildren(tree) {
+					stack.push(...tree);
+					for (let i = 0; i < tree.length; i++) {
+						const childTree = await fileModel.find({
+							user: userId,
+							parent: tree[i]._id,
+						});
+						return recursivFindChildren(childTree);
 					}
-
-					recursivFindChildren(fileTree).then(() => resolve(stack));
-				});
-
-			const startPromise = async () => {
-				const treeChild = await fileModel.find({
-					user: userId,
-					parent: file._id,
-				});
-				const result = await promise(treeChild);
-				if (result) {
-					return result;
 				}
-			};
 
-			return startPromise();
+				recursivFindChildren(children)
+					.then(() => resolve(stack))
+					.catch((error) => {
+						reject(error);
+					});
+			});
 		} catch (e) {
-			return e;
+			throw e;
 		}
 	}
 	getPath(file) {
