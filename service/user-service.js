@@ -8,17 +8,16 @@ import ApiError from "../exeptions/api-error.js";
 import fileService from "./file-service.js";
 import fileModel from "../models/file-model.js";
 class UserService {
-	async registration(email, password, userName) {
+	async registration(email, password) {
 		const candidate = await userModel.findOne({ email });
 		if (candidate) {
 			throw ApiError.BadRequest(
-				`Пользователь с таким почтовым адресом ${email} уже существует`
+				`A user with this email address «${email}» already exists`
 			);
 		}
 		const hashPassword = await bcrypt.hash(password, 3);
 		const activationLink = uuidv4();
 		const user = new userModel({
-			userName,
 			email,
 			password: hashPassword,
 			activationLink,
@@ -49,11 +48,11 @@ class UserService {
 	async login(email, password) {
 		const user = await userModel.findOne({ email });
 		if (!user) {
-			throw ApiError.BadRequest("Пользователь с таким email не найден");
+			throw ApiError.BadRequest(`Wrong login or password`);
 		}
 		const isPassEquals = await bcrypt.compare(password, user.password);
 		if (!isPassEquals) {
-			throw ApiError.BadRequest("Неверный пароль");
+			throw ApiError.BadRequest("Wrong login or password");
 		}
 		const userDto = new UserDto(user);
 		const tokens = tokenService.generateTokens({ ...userDto });

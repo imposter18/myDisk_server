@@ -1,7 +1,5 @@
 import * as fs from "fs";
 import path from "path";
-import ApiError from "../exeptions/api-error.js";
-
 import fileModel from "../models/file-model.js";
 
 class FileService {
@@ -123,24 +121,22 @@ class FileService {
 				parent: file._id,
 			});
 
-			return new Promise((resolve, reject) => {
+			return await new Promise((resolve, reject) => {
 				let stack = [];
 				async function recursivFindChildren(tree) {
+					if (!tree.length) {
+						return stack;
+					}
 					stack.push(...tree);
 					for (let i = 0; i < tree.length; i++) {
-						const childTree = await fileModel.find({
-							user: userId,
-							parent: tree[i]._id,
-						});
-						return recursivFindChildren(childTree);
+						await new Promise((resolve) => {
+							const children = fileModel.find({ parent: tree[i]._id });
+							resolve(children);
+						}).then((resalt) => recursivFindChildren(resalt));
 					}
 				}
 
-				recursivFindChildren(children)
-					.then(() => resolve(stack))
-					.catch((error) => {
-						reject(error);
-					});
+				recursivFindChildren(children).then(() => resolve(stack));
 			});
 		} catch (e) {
 			throw e;

@@ -209,29 +209,35 @@ class FileController {
 
 			const oldAbsolutPath = fileService.getPath(file);
 			const checkAccess = fileService.fileExists(oldAbsolutPath);
+
 			if (checkAccess) {
 				const relativePathToFile = fileService.getRelativePathToFile(file);
 				const newRelativePath = `${relativePathToFile}${newName}`;
 				let newAbsolutPath =
 					fileService.getPathToMainDirectory(file) + newRelativePath;
-				fs.renameSync(oldAbsolutPath, newAbsolutPath);
-				if (file.type === "dir") {
-					const children = await fileService.getAllChildren(file, user.id);
-					children.map((child) => {
-						return (child.path = child.path.replace(
-							file.path,
-							newRelativePath
-						));
-					});
-					console.log(children);
-					children.forEach((child) => {
-						child.save();
-					});
+				const checkAccessNewPath = fileService.fileExists(newAbsolutPath);
+				if (!checkAccessNewPath) {
+					fs.renameSync(oldAbsolutPath, newAbsolutPath);
+					if (file.type === "dir") {
+						const children = await fileService.getAllChildren(file, user.id);
+						children.map((child) => {
+							return (child.path = child.path.replace(
+								file.path,
+								newRelativePath
+							));
+						});
+						children.forEach((child) => {
+							child.save();
+						});
+					}
+					file.name = newName;
+					file.path = newRelativePath;
+					file.save();
+				} else {
+					return res
+						.status(400)
+						.json({ message: `File named "${newName}" already exists!` });
 				}
-
-				file.name = newName;
-				file.path = newRelativePath;
-				file.save();
 			} else {
 				return res.status(500).json({ message: "Access error" });
 			}
