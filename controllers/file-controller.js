@@ -21,7 +21,7 @@ class FileController {
 				await fileService.createDir(file);
 			} else {
 				file.path = `${parentFile.path}\\${file.name}`;
-				await fileService.createDir(file);
+				await fileService.createDir(req, file);
 				parentFile.childs.push(file._id);
 				await parentFile.save();
 			}
@@ -130,6 +130,7 @@ class FileController {
 			const user = await userModel.findOne({ _id: req.user.id });
 
 			const dbFile = await fileService.uploadFile(
+				req,
 				file,
 				parent,
 				user,
@@ -153,8 +154,8 @@ class FileController {
 				_id: req.query.id,
 				user: req.user.id,
 			});
-
-			const puth = `${process.env.FILE_PATH}\\${req.user.id}\\${file.path}`;
+			console.log(req.filePath);
+			const puth = `${req.filePath}\\files\\${req.user.id}\\${file.path}`;
 
 			if (fileService.fileExists(puth)) {
 				return res.download(puth, file.name, { dotfiles: "allow" });
@@ -180,7 +181,7 @@ class FileController {
 				await element.remove();
 			});
 			file.remove();
-			fileService.deleteFile(file);
+			fileService.deleteFile(req, file);
 
 			return res.json(file);
 		} catch (e) {
@@ -207,14 +208,14 @@ class FileController {
 
 			const file = await fileModel.findOne({ user: user.id, _id: fileId });
 
-			const oldAbsolutPath = fileService.getPath(file);
+			const oldAbsolutPath = fileService.getPath(req, file);
 			const checkAccess = fileService.fileExists(oldAbsolutPath);
 
 			if (checkAccess) {
 				const relativePathToFile = fileService.getRelativePathToFile(file);
 				const newRelativePath = `${relativePathToFile}${newName}`;
 				let newAbsolutPath =
-					fileService.getPathToMainDirectory(file) + newRelativePath;
+					fileService.getPathToMainDirectory(req, file) + newRelativePath;
 				const checkAccessNewPath = fileService.fileExists(newAbsolutPath);
 				if (!checkAccessNewPath) {
 					fs.renameSync(oldAbsolutPath, newAbsolutPath);

@@ -3,8 +3,8 @@ import path from "path";
 import fileModel from "../models/file-model.js";
 
 class FileService {
-	createDir(file) {
-		const filePath = this.getPath(file);
+	createDir(req, file) {
+		const filePath = this.getPath(req, file);
 		return new Promise((ressolve, reject) => {
 			try {
 				if (!fs.existsSync(filePath)) {
@@ -52,7 +52,7 @@ class FileService {
 			throw e;
 		}
 	}
-	async uploadFile(file, parent, user, type, fileName, uploadId) {
+	async uploadFile(req, file, parent, user, type, fileName, uploadId) {
 		return new Promise((ressolve, reject) => {
 			try {
 				if (user.usedSpace + file.size > user.diskSpace) {
@@ -61,9 +61,9 @@ class FileService {
 
 				let path;
 				if (parent) {
-					path = `${process.env.FILE_PATH}\\${user._id}\\${parent.path}\\${fileName}`;
+					path = `${req.filePath}\\files\\${user._id}\\${parent.path}\\${fileName}`;
 				} else {
-					path = `${process.env.FILE_PATH}\\${user._id}\\${fileName}`;
+					path = `${req.filePath}\\files\\${user._id}\\${fileName}`;
 				}
 
 				const check = this.fileExists(path);
@@ -102,9 +102,9 @@ class FileService {
 			}
 		});
 	}
-	deleteFile(file) {
+	deleteFile(req, file) {
 		try {
-			const path = this.getPath(file);
+			const path = this.getPath(req, file);
 			if (file.type === "dir") {
 				fs.rmdirSync(path, { recursive: true });
 			} else {
@@ -142,11 +142,11 @@ class FileService {
 			throw e;
 		}
 	}
-	getPath(file) {
-		return `${process.env.FILE_PATH}\\${file.user}\\${file.path}`;
+	getPath(req, file) {
+		return `${req.filePath}\\files\\${file.user}\\${file.path}`;
 	}
-	getPathToMainDirectory(file) {
-		return `${process.env.FILE_PATH}\\${file.user}\\`;
+	getPathToMainDirectory(req, file) {
+		return `${req.filePath}\\files\\${file.user}\\`;
 	}
 	getRelativePathToFile(file) {
 		if (file.path === file.name) {
