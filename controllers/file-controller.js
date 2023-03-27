@@ -242,7 +242,7 @@ class FileController {
 				return res.status(500).json({ message: "Access error" });
 			}
 
-			res.json(file);
+			return res.json(file);
 		} catch (e) {
 			console.log(e, "e2");
 			return res.status(500).json({ message: "Rename error", error: e });

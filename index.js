@@ -25,7 +25,8 @@ const app = express();
 // );
 app.use(
 	cors({
-		origin: process.env.CLIENT_URL,
+		// origin:  process.env.CLIENT_URL  ,
+		origin: process.env.CLIENT_URL2,
 		credentials: true,
 		optionSuccessStatus: 200,
 		allowedHeaders: ["Content-Type", "*Content-Type", "Authorization"],

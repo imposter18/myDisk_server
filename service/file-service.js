@@ -35,7 +35,7 @@ class FileService {
 			return new Promise((resolve, reject) => {
 				const stack = [];
 				async function recursiveFind(file) {
-					if (file?.parent) {
+					if (file.parent) {
 						const fileWithParent = await fileModel.findOne({
 							user: user.id,
 							_id: file.parent,
@@ -91,7 +91,7 @@ class FileService {
 						size: file.size,
 						path: filePath,
 						date: new Date(),
-						parent: parent?._id,
+						parent: parent._id,
 						user: user._id,
 						uploadId: uploadId,
 					})
@@ -123,7 +123,7 @@ class FileService {
 
 			return await new Promise((resolve, reject) => {
 				let stack = [];
-				async function recursivFindChildren(tree) {
+				async function recursiveFindChildren(tree) {
 					if (!tree.length) {
 						return stack;
 					}
@@ -132,11 +132,11 @@ class FileService {
 						await new Promise((resolve) => {
 							const children = fileModel.find({ parent: tree[i]._id });
 							resolve(children);
-						}).then((resalt) => recursivFindChildren(resalt));
+						}).then((resalt) => recursiveFindChildren(resalt));
 					}
 				}
 
-				recursivFindChildren(children).then(() => resolve(stack));
+				recursiveFindChildren(children).then(() => resolve(stack));
 			});
 		} catch (e) {
 			throw e;
