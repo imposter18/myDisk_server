@@ -47,6 +47,7 @@ class UserService {
 	}
 	async login(email, password) {
 		const user = await userModel.findOne({ email });
+		console.log(user, "user11");
 		if (!user) {
 			throw ApiError.BadRequest(`Wrong login or password`);
 		}
@@ -67,23 +68,28 @@ class UserService {
 		return token;
 	}
 	async refresh(refreshToken) {
-		if (!refreshToken) {
-			throw ApiError.UnautorizadError();
+		try {
+			if (!refreshToken) {
+				throw ApiError.UnautorizadError();
+			}
+			const userData = tokenService.validateRefreshToken(refreshToken);
+			const tokenFromDb = await tokenService.findToken(refreshToken);
+			if (!userData || !tokenFromDb) {
+				throw ApiError.UnautorizadError();
+			}
+			const user = await userModel.findById(userData.id);
+			const userDto = new UserDto(user);
+			const tokens = tokenService.generateTokens({ ...userDto });
+			await tokenService.saveToken(userDto.id, tokens.refreshToken);
+			return {
+				...tokens,
+				user: userDto,
+			};
+		} catch (e) {
+			throw e;
 		}
-		const userData = tokenService.validateRefreshToken(refreshToken);
-		const tokenFromDb = await tokenService.findToken(refreshToken);
-		if (!userData || !tokenFromDb) {
-			throw ApiError.UnautorizadError();
-		}
-		const user = await userModel.findById(userData.id);
-		const userDto = new UserDto(user);
-		const tokens = tokenService.generateTokens({ ...userDto });
-		await tokenService.saveToken(userDto.id, tokens.refreshToken);
-		return {
-			...tokens,
-			user: userDto,
-		};
 	}
+
 	async getAllUsers() {
 		const users = await userModel.find();
 		return users;

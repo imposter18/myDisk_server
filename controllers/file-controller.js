@@ -3,6 +3,7 @@ import userModel from "../models/user-model.js";
 import fileModel from "../models/file-model.js";
 import * as fs from "fs";
 import path from "path";
+import { pathToServer } from "../default.js";
 
 class FileController {
 	async createDir(req, res, next) {
@@ -15,13 +16,14 @@ class FileController {
 				user: req.user.id,
 				date: new Date(),
 			});
+
 			const parentFile = await fileModel.findOne({ _id: parent });
 			if (!parentFile) {
 				file.path = name;
 				await fileService.createDir(file);
 			} else {
 				file.path = `${parentFile.path}\\${file.name}`;
-				await fileService.createDir(req, file);
+				await fileService.createDir(file);
 				parentFile.childs.push(file._id);
 				await parentFile.save();
 			}
@@ -119,6 +121,7 @@ class FileController {
 	}
 	async uploadFile(req, res) {
 		try {
+			// console.log(pathToServer, "pathToServer");
 			const file = req.files.file;
 			const fileName = req.body.fileName;
 			const uploadId = req.body.uploadId;
@@ -130,7 +133,6 @@ class FileController {
 			const user = await userModel.findOne({ _id: req.user.id });
 
 			const dbFile = await fileService.uploadFile(
-				req,
 				file,
 				parent,
 				user,
@@ -143,9 +145,9 @@ class FileController {
 			}
 			res.json(dbFile);
 		} catch (e) {
-			return res
-				.status(500)
-				.json({ message: e.message, error: e, data: e.data });
+			console.log(e);
+			return res.status(500).json({ message: e });
+			// .json({ message: e.message, error: e, data: e.data });
 		}
 	}
 	async downloadFile(req, res, next) {
@@ -154,8 +156,7 @@ class FileController {
 				_id: req.query.id,
 				user: req.user.id,
 			});
-			console.log(req.filePath);
-			const puth = `${req.filePath}\\files\\${req.user.id}\\${file.path}`;
+			const puth = `${pathToServer}\\files\\${req.user.id}\\${file.path}`;
 
 			if (fileService.fileExists(puth)) {
 				return res.download(puth, file.name, { dotfiles: "allow" });
@@ -181,7 +182,7 @@ class FileController {
 				await element.remove();
 			});
 			file.remove();
-			fileService.deleteFile(req, file);
+			fileService.deleteFile(file);
 
 			return res.json(file);
 		} catch (e) {
@@ -208,14 +209,14 @@ class FileController {
 
 			const file = await fileModel.findOne({ user: user.id, _id: fileId });
 
-			const oldAbsolutPath = fileService.getPath(req, file);
+			const oldAbsolutPath = fileService.getPath(file);
 			const checkAccess = fileService.fileExists(oldAbsolutPath);
 
 			if (checkAccess) {
 				const relativePathToFile = fileService.getRelativePathToFile(file);
 				const newRelativePath = `${relativePathToFile}${newName}`;
 				let newAbsolutPath =
-					fileService.getPathToMainDirectory(req, file) + newRelativePath;
+					fileService.getPathToMainDirectory(file) + newRelativePath;
 				const checkAccessNewPath = fileService.fileExists(newAbsolutPath);
 				if (!checkAccessNewPath) {
 					fs.renameSync(oldAbsolutPath, newAbsolutPath);

@@ -14,6 +14,7 @@ export default function authMiddleware(req, res, next) {
 		}
 
 		const userData = tokenService.validateAccessToken(accessToken);
+		// console.log(userData, "userData");
 		if (!userData) {
 			return next(ApiError.UnautorizadError());
 		}

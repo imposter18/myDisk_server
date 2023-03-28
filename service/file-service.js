@@ -1,10 +1,11 @@
 import * as fs from "fs";
 import path from "path";
 import fileModel from "../models/file-model.js";
+import { pathToServer } from "../default.js";
 
 class FileService {
-	createDir(req, file) {
-		const filePath = this.getPath(req, file);
+	createDir(file) {
+		const filePath = this.getPath(file);
 		return new Promise((ressolve, reject) => {
 			try {
 				if (!fs.existsSync(filePath)) {
@@ -52,18 +53,17 @@ class FileService {
 			throw e;
 		}
 	}
-	async uploadFile(req, file, parent, user, type, fileName, uploadId) {
+	async uploadFile(file, parent, user, type, fileName, uploadId) {
 		return new Promise((ressolve, reject) => {
 			try {
 				if (user.usedSpace + file.size > user.diskSpace) {
 					return reject({ message: "There no space on disk" });
 				}
-
 				let path;
 				if (parent) {
-					path = `${req.filePath}\\files\\${user._id}\\${parent.path}\\${fileName}`;
+					path = `${pathToServer}\\files\\${user._id}\\${parent.path}\\${fileName}`;
 				} else {
-					path = `${req.filePath}\\files\\${user._id}\\${fileName}`;
+					path = `${pathToServer}\\files\\${user._id}\\${fileName}`;
 				}
 
 				const check = this.fileExists(path);
@@ -80,8 +80,10 @@ class FileService {
 				file.mv(path);
 
 				let filePath = fileName;
+				let parentPath = null;
 				if (parent) {
 					filePath = parent.path + "\\" + fileName;
+					parentPath = parent._id;
 				}
 
 				return ressolve(
@@ -91,7 +93,7 @@ class FileService {
 						size: file.size,
 						path: filePath,
 						date: new Date(),
-						parent: parent._id,
+						parent: parentPath,
 						user: user._id,
 						uploadId: uploadId,
 					})
@@ -102,9 +104,9 @@ class FileService {
 			}
 		});
 	}
-	deleteFile(req, file) {
+	deleteFile(file) {
 		try {
-			const path = this.getPath(req, file);
+			const path = this.getPath(file);
 			if (file.type === "dir") {
 				fs.rmdirSync(path, { recursive: true });
 			} else {
@@ -142,11 +144,12 @@ class FileService {
 			throw e;
 		}
 	}
-	getPath(req, file) {
-		return `${req.filePath}\\files\\${file.user}\\${file.path}`;
+	getPath(file) {
+		// console.log(file, "file");
+		return `${pathToServer}\\files\\${file.user}\\${file.path}`;
 	}
-	getPathToMainDirectory(req, file) {
-		return `${req.filePath}\\files\\${file.user}\\`;
+	getPathToMainDirectory(file) {
+		return `${pathToServer}\\files\\${file.user}\\`;
 	}
 	getRelativePathToFile(file) {
 		if (file.path === file.name) {
