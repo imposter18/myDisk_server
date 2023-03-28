@@ -9,63 +9,77 @@ import fileService from "./file-service.js";
 import fileModel from "../models/file-model.js";
 class UserService {
 	async registration(email, password) {
-		const candidate = await userModel.findOne({ email });
-		if (candidate) {
-			throw ApiError.BadRequest(
-				`A user with this email address «${email}» already exists`
+		try {
+			const candidate = await userModel.findOne({ email });
+			if (candidate) {
+				throw ApiError.BadRequest(
+					`A user with this email address «${email}» already exists`
+				);
+			}
+			const hashPassword = await bcrypt.hash(password, 3);
+			const activationLink = uuidv4();
+			const user = new userModel({
+				email,
+				password: hashPassword,
+				activationLink,
+			});
+			await MailService.sendActivationMail(
+				email,
+				`${process.env.API_URL}/api/activate/${activationLink}`
 			);
+			const userDto = new UserDto(user);
+			const tokens = tokenService.generateTokens({ ...userDto });
+			await tokenService.saveToken(userDto.id, tokens.refreshToken);
+			await user.save();
+			await fileService.createDir(new fileModel({ user: user.id, name: "" }));
+			return {
+				...tokens,
+				user: userDto,
+			};
+		} catch (e) {
+			throw e;
 		}
-		const hashPassword = await bcrypt.hash(password, 3);
-		const activationLink = uuidv4();
-		const user = new userModel({
-			email,
-			password: hashPassword,
-			activationLink,
-		});
-		await MailService.sendActivationMail(
-			email,
-			`${process.env.API_URL}/api/activate/${activationLink}`
-		);
-		const userDto = new UserDto(user);
-		const tokens = tokenService.generateTokens({ ...userDto });
-		await tokenService.saveToken(userDto.id, tokens.refreshToken);
-		await user.save();
-		await fileService.createDir(new fileModel({ user: user.id, name: "" }));
-		// return res.json({ message: `User was created` });
-		return {
-			...tokens,
-			user: userDto,
-		};
 	}
 	async activate(activationLink) {
-		const user = await userModel.findOne({ activationLink });
-		if (!user) {
-			throw ApiError.BadRequest("Неккоректная ссылка активации");
+		try {
+			const user = await userModel.findOne({ activationLink });
+			if (!user) {
+				throw ApiError.BadRequest("Неккоректная ссылка активации");
+			}
+			user.isActivated = true;
+			await user.save();
+		} catch (e) {
+			throw e;
 		}
-		user.isActivated = true;
-		await user.save();
 	}
 	async login(email, password) {
-		const user = await userModel.findOne({ email });
-		console.log(user, "user11");
-		if (!user) {
-			throw ApiError.BadRequest(`Wrong login or password`);
+		try {
+			const user = await userModel.findOne({ email });
+			if (!user) {
+				throw ApiError.BadRequest(`Wrong login or password`);
+			}
+			const isPassEquals = await bcrypt.compare(password, user.password);
+			if (!isPassEquals) {
+				throw ApiError.BadRequest("Wrong login or password");
+			}
+			const userDto = new UserDto(user);
+			const tokens = tokenService.generateTokens({ ...userDto });
+			await tokenService.saveToken(userDto.id, tokens.refreshToken);
+			return {
+				...tokens,
+				user: userDto,
+			};
+		} catch (e) {
+			throw e;
 		}
-		const isPassEquals = await bcrypt.compare(password, user.password);
-		if (!isPassEquals) {
-			throw ApiError.BadRequest("Wrong login or password");
-		}
-		const userDto = new UserDto(user);
-		const tokens = tokenService.generateTokens({ ...userDto });
-		await tokenService.saveToken(userDto.id, tokens.refreshToken);
-		return {
-			...tokens,
-			user: userDto,
-		};
 	}
 	async logout(refreshToken) {
-		const token = await tokenService.removeToken(refreshToken);
-		return token;
+		try {
+			const token = await tokenService.removeToken(refreshToken);
+			return token;
+		} catch (e) {
+			throw e;
+		}
 	}
 	async refresh(refreshToken) {
 		try {
@@ -91,8 +105,12 @@ class UserService {
 	}
 
 	async getAllUsers() {
-		const users = await userModel.find();
-		return users;
+		try {
+			const users = await userModel.find();
+			return users;
+		} catch (e) {
+			throw e;
+		}
 	}
 }
 

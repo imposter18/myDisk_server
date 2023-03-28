@@ -121,7 +121,6 @@ class FileController {
 	}
 	async uploadFile(req, res) {
 		try {
-			// console.log(pathToServer, "pathToServer");
 			const file = req.files.file;
 			const fileName = req.body.fileName;
 			const uploadId = req.body.uploadId;
@@ -246,7 +245,7 @@ class FileController {
 
 			return res.json(file);
 		} catch (e) {
-			console.log(e, "e2");
+			console.log(e);
 			return res.status(500).json({ message: "Rename error", error: e });
 		}
 	}

@@ -100,7 +100,7 @@ class FileService {
 				);
 			} catch (e) {
 				console.log(e);
-				reject();
+				reject(e);
 			}
 		});
 	}
@@ -108,7 +108,7 @@ class FileService {
 		try {
 			const path = this.getPath(file);
 			if (file.type === "dir") {
-				fs.rmdirSync(path, { recursive: true });
+				fs.rmSync(path, { recursive: true });
 			} else {
 				fs.unlinkSync(path);
 			}
@@ -145,7 +145,6 @@ class FileService {
 		}
 	}
 	getPath(file) {
-		// console.log(file, "file");
 		return `${pathToServer}\\files\\${file.user}\\${file.path}`;
 	}
 	getPathToMainDirectory(file) {

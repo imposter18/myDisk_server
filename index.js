@@ -8,14 +8,11 @@ import express from "express";
 import router from "./router/index.js";
 import errorMiddleware from "./middlewares/error-middleware.js";
 import fileUpload from "express-fileupload";
-import { filePathMiddleware } from "./middlewares/path-auth-middleware.js";
-import { fileURLToPath } from "url";
-import { pathToServer } from "./default.js";
 const PORT = process.env.PORT || 5000;
 const URL = process.env.DB_URL;
 
 function setCustomCacheControl(res) {
-	res.setHeader("Cache-Control", "public, max-age='1h'");
+	res.setHeader("Cache-Control", "public, max-age='1d");
 }
 
 const app = express();
@@ -29,21 +26,23 @@ app.use(
 	})
 );
 
-app.use("/api/files", express.static("files"));
-// app.use(
-// 	"/api/files",
-// 	express.static(`${pathToServer}\\${"files"}`, {
-// 		setHeaders: setCustomCacheControl,
-// 	})
-// );
-
 app.use(fileUpload({}));
+
 app.use(express.json());
+
 app.use(cookieParser());
+
 app.use("/api", router);
-app.use("/api/files", express.static("files"));
-// app.use(filePathMiddleware(path.dirname(fileURLToPath(import.meta.url))));
+
+app.use(
+	"/api/files",
+	express.static("files", {
+		setHeaders: setCustomCacheControl,
+	})
+);
+
 app.use(errorMiddleware);
+
 const start = async () => {
 	try {
 		mongoose.set("strictQuery", false);
