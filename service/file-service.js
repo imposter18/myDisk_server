@@ -62,18 +62,18 @@ class FileService {
 				if (user.usedSpace + file.size > user.diskSpace) {
 					return reject({ message: "There no space on disk" });
 				}
-				let path;
+				let absolutPath;
 				if (parent) {
-					path = path.normalize(
+					absolutPath = path.normalize(
 						`${pathToServer}//files//${user._id}//${parent.path}//${fileName}`
 					);
 				} else {
-					path = path.normalize(
+					absolutPath = path.normalize(
 						`${pathToServer}//files//${user._id}//${fileName}`
 					);
 				}
 
-				const check = this.fileExists(path);
+				const check = this.fileExists(absolutPath);
 
 				if (check) {
 					return reject({
@@ -84,12 +84,12 @@ class FileService {
 
 				user.usedSpace = user.usedSpace + file.size;
 				user.save();
-				file.mv(path);
+				file.mv(absolutPath);
 
-				let filePath = fileName;
+				let relativePath = fileName;
 				let parentId = null;
 				if (parent) {
-					filePath = path.normalize(parent.path + "//" + fileName);
+					relativePath = path.normalize(path.join(parent.path, fileName));
 					parentId = parent._id;
 				}
 
@@ -98,7 +98,7 @@ class FileService {
 						name: fileName,
 						type,
 						size: file.size,
-						path: filePath,
+						path: relativePath,
 						date: new Date(),
 						parent: parentId,
 						user: user._id,
