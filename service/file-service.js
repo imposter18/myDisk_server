@@ -64,9 +64,13 @@ class FileService {
 				}
 				let path;
 				if (parent) {
-					path = `${pathToServer}//files//${user._id}//${parent.path}//${fileName}`;
+					path = path.normalize(
+						`${pathToServer}//files//${user._id}//${parent.path}//${fileName}`
+					);
 				} else {
-					path = `${pathToServer}//files//${user._id}//${fileName}`;
+					path = path.normalize(
+						`${pathToServer}//files//${user._id}//${fileName}`
+					);
 				}
 
 				const check = this.fileExists(path);
@@ -83,10 +87,10 @@ class FileService {
 				file.mv(path);
 
 				let filePath = fileName;
-				let parentPath = null;
+				let parentId = null;
 				if (parent) {
-					filePath = parent.path + "//" + fileName;
-					parentPath = parent._id;
+					filePath = path.normalize(parent.path + "//" + fileName);
+					parentId = parent._id;
 				}
 
 				return ressolve(
@@ -96,7 +100,7 @@ class FileService {
 						size: file.size,
 						path: filePath,
 						date: new Date(),
-						parent: parentPath,
+						parent: parentId,
 						user: user._id,
 						uploadId: uploadId,
 					})
@@ -161,7 +165,7 @@ class FileService {
 		return path.normalize(`${pathToServer}//files//${file.user}//${file.path}`);
 	}
 	getPathToMainDirectory(file) {
-		return `${pathToServer}//files//${file.user}//`;
+		return path.normalize(`${pathToServer}//files//${file.user}//`);
 	}
 	getRelativePathToFile(file) {
 		if (file.path === file.name) {
@@ -169,7 +173,7 @@ class FileService {
 		}
 
 		if (file.path !== file.name) {
-			return `${path.dirname(file.path)}//`;
+			return path.normalize(`${path.dirname(file.path)}//`);
 		}
 	}
 }
