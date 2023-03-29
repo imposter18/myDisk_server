@@ -22,7 +22,7 @@ class FileController {
 				file.path = name;
 				await fileService.createDir(file);
 			} else {
-				file.path = `${parentFile.path}\\${file.name}`;
+				file.path = `${parentFile.path}//${file.name}`;
 				await fileService.createDir(file);
 				parentFile.childs.push(file._id);
 				await parentFile.save();
@@ -155,7 +155,7 @@ class FileController {
 				_id: req.query.id,
 				user: req.user.id,
 			});
-			const puth = `${pathToServer}\\files\\${req.user.id}\\${file.path}`;
+			const puth = `${pathToServer}//files//${req.user.id}//${file.path}`;
 
 			if (fileService.fileExists(puth)) {
 				return res.download(puth, file.name, { dotfiles: "allow" });

@@ -1,11 +1,14 @@
 import * as fs from "fs";
 import path from "path";
+import posix from "path/posix";
 import fileModel from "../models/file-model.js";
 import { pathToServer } from "../default.js";
+import os from "os";
 
 class FileService {
 	createDir(file) {
 		const filePath = this.getPath(file);
+		console.log(filePath, "filePath");
 		return new Promise((ressolve, reject) => {
 			try {
 				if (!fs.existsSync(filePath)) {
@@ -61,9 +64,9 @@ class FileService {
 				}
 				let path;
 				if (parent) {
-					path = `${pathToServer}\\files\\${user._id}\\${parent.path}\\${fileName}`;
+					path = `${pathToServer}//files//${user._id}//${parent.path}//${fileName}`;
 				} else {
-					path = `${pathToServer}\\files\\${user._id}\\${fileName}`;
+					path = `${pathToServer}//files//${user._id}//${fileName}`;
 				}
 
 				const check = this.fileExists(path);
@@ -82,7 +85,7 @@ class FileService {
 				let filePath = fileName;
 				let parentPath = null;
 				if (parent) {
-					filePath = parent.path + "\\" + fileName;
+					filePath = parent.path + "//" + fileName;
 					parentPath = parent._id;
 				}
 
@@ -144,11 +147,21 @@ class FileService {
 			throw e;
 		}
 	}
+	normalizePathForOs(path) {
+		const os = os.type();
+		if (os === "Windows_NT") {
+			return path;
+		}
+		if (os === "Linux") {
+			return path.split(path.sep).join(path.posix.sep);
+		}
+	}
+
 	getPath(file) {
-		return `${pathToServer}\\files\\${file.user}\\${file.path}`;
+		return path.normalize(`${pathToServer}//files//${file.user}//${file.path}`);
 	}
 	getPathToMainDirectory(file) {
-		return `${pathToServer}\\files\\${file.user}\\`;
+		return `${pathToServer}//files//${file.user}//`;
 	}
 	getRelativePathToFile(file) {
 		if (file.path === file.name) {
@@ -156,7 +169,7 @@ class FileService {
 		}
 
 		if (file.path !== file.name) {
-			return `${path.dirname(file.path)}\\`;
+			return `${path.dirname(file.path)}//`;
 		}
 	}
 }

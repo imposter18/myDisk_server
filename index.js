@@ -25,12 +25,11 @@ app.use(
 		allowedHeaders: ["Content-Type", "*Content-Type", "Authorization"],
 	})
 );
-
-app.use(fileUpload({}));
+app.use(cookieParser());
 
 app.use(express.json());
 
-app.use(cookieParser());
+app.use(fileUpload({}));
 
 app.use("/api", router);
 

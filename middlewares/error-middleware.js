@@ -6,5 +6,6 @@ export default function (err, req, res, next) {
 			.status(err.status)
 			.json({ message: err.message, errors: err.errors });
 	}
+	console.log(err);
 	return res.status(500).json({ message: "Непредвиденная ошибка" });
 }
