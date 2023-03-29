@@ -145,8 +145,9 @@ class FileController {
 			res.json(dbFile);
 		} catch (e) {
 			console.log(e);
-			return res.status(500).json({ message: e });
-			// .json({ message: e.message, error: e, data: e.data });
+			return res
+				.status(500)
+				.json({ message: e.message, error: e, data: e.data });
 		}
 	}
 	async downloadFile(req, res, next) {
