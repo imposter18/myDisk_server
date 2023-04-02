@@ -22,7 +22,7 @@ router.get("/updateUserSpace", authMiddleware, userController.getUserSpace);
 router.post("/files", authMiddleware, fileController.createDir);
 router.get("/files", authMiddleware, fileController.getFiles);
 router.post("/upload", authMiddleware, fileController.uploadFile);
-router.get("/download", authMiddleware, fileController.downloadFile);
+router.get("/download", fileController.downloadFile);
 router.delete("/files", authMiddleware, fileController.deleteFile);
 router.get("/getPerent", authMiddleware, fileController.getAllParent);
 router.get("/searchFiles", authMiddleware, fileController.searchFile);

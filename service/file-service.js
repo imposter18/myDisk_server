@@ -8,7 +8,6 @@ import os from "os";
 class FileService {
 	createDir(file) {
 		const filePath = this.getPath(file);
-		console.log(filePath, "filePath");
 		return new Promise((ressolve, reject) => {
 			try {
 				if (!fs.existsSync(filePath)) {

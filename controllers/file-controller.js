@@ -4,6 +4,7 @@ import fileModel from "../models/file-model.js";
 import * as fs from "fs";
 import path from "path";
 import { pathToServer } from "../default.js";
+import userService from "../service/user-service.js";
 
 class FileController {
 	async createDir(req, res, next) {
@@ -152,15 +153,22 @@ class FileController {
 	}
 	async downloadFile(req, res, next) {
 		try {
+			const { refreshToken } = req.cookies;
+			const userData = await userService.refresh(refreshToken);
+
 			const file = await fileModel.findOne({
 				_id: req.query.id,
-				user: req.user.id,
+				// user: req.user.id,
 			});
 			const puth = path.normalize(
-				`${pathToServer}//files//${req.user.id}//${file.path}`
+				`${pathToServer}//files//${file.user._id}//${file.path}`
 			);
 
 			if (fileService.fileExists(puth)) {
+				res.cookie("refreshToken", userData.refreshToken, {
+					maxAge: 36 * 24 * 60 * 60 * 1000,
+					httpOnly: true,
+				});
 				return res.download(puth, file.name, { dotfiles: "allow" });
 			}
 			return res.status(500).json({ message: "Download error" });
