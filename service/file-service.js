@@ -59,7 +59,10 @@ class FileService {
 		return new Promise((ressolve, reject) => {
 			try {
 				if (user.usedSpace + file.size > user.diskSpace) {
-					return reject({ message: "There no space on disk" });
+					return reject({
+						message: "There no space on disk",
+						data: { fileName, uploadId: uploadId },
+					});
 				}
 				let absolutPath;
 				if (parent) {
